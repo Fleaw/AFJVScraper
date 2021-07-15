@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AFJVScrapper": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "EPPlusLicenseContext": "NonCommercial"
+      }
+    }
+  }
+}
