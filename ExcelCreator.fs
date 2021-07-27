@@ -9,6 +9,9 @@ open Helpers
 module ExcelCreator =
 
     [<Literal>]
+    let fileName = "Annuaire.xlsx"
+
+    [<Literal>]
     let sheetName = "Annuaire"
 
     ExcelPackage.LicenseContext <- LicenseContext.NonCommercial
@@ -29,8 +32,8 @@ module ExcelCreator =
         headerRange.Style.HorizontalAlignment <- Style.ExcelHorizontalAlignment.Center
         headerRange.Style.VerticalAlignment <- Style.ExcelVerticalAlignment.Center
 
-        FileInfo(fileName) |> p.SaveAs 
-        p
+        FileInfo(fileName) |> p.SaveAs
+        p.Dispose()
 
     let studioToList (studio:Studio) =
         let addressFormat = sprintf "%s\n%s %s" studio.Address.StreetAddress studio.Address.PostalCode studio.Address.City
@@ -50,7 +53,7 @@ module ExcelCreator =
 
     let populateExcelWithStudio (excel:ExcelPackage) (sheetName:string) rowIndex studio =
         let ws = excel.Workbook.Worksheets.[sheetName]
-
+        
         let rowNumber = rowIndex + 2
 
         studio
@@ -70,7 +73,8 @@ module ExcelCreator =
         ()
 
     let importStudiosToExcel (studios:Studio list) =
-        let excelFile = createExcelFile "Annuaire.xlsx" sheetName
+        createExcelFile fileName sheetName
+        let excelFile = new ExcelPackage(FileInfo(fileName))
 
         studios
         |> List.mapi (populateExcelWithStudio excelFile sheetName) 

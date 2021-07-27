@@ -12,20 +12,19 @@ module AFJVHtmlParser =
     let afjvBaseUrl = """https://www.afjv.com"""
     
 
-    let getAFJVAnnuaireUrls () =
-        let htmlAnnuaire = HtmlDocument.Load("""https://www.afjv.com/annuaire_studio.php?d=100""")
+    let getAFJVStudiosUrl () =
+        let htmlDirectory = HtmlDocument.Load("""https://www.afjv.com/annuaire_studio.php?d=100""")
         
         let extractDepartmentAndAFJVUrl (htmlNodeList:HtmlNode []) =
             let department = htmlNodeList.[0].InnerText()
             let afjvStudioUrl = htmlNodeList.[1].AttributeValue "href"
             (department, afjvBaseUrl + afjvStudioUrl)
     
-        htmlAnnuaire.Descendants "div"
+        htmlDirectory.Descendants "div"
         |> Seq.filter (fun d -> d.HasClass """anu_col ombrei br2 """)
         |> Seq.map (fun d -> d.Descendants "a")
         |> Seq.concat
         |> Seq.chunkBySize 2
-        //|> Seq.take 2
         |> Seq.map extractDepartmentAndAFJVUrl
         |> Seq.toList
     
@@ -35,7 +34,7 @@ module AFJVHtmlParser =
         Console.Write($"{index + 1}/{total} - {studioName}")
     
     
-    let exctractStudioInfoFromUrl annuaireSize index (department:string, url:string) =
+    let exctractStudioInfoFromUrl directorySize index (department:string, url:string) =
         let htmlStudio = HtmlDocument.Load(url)
         
         let htmlStudioInfos = 
@@ -52,7 +51,7 @@ module AFJVHtmlParser =
                     n
             )
                 
-        let htmlStudioInfosElementsName =
+        let htmlStudioInfosElementsName () =
             htmlStudioInfos
             |> List.map (fun n -> 
                 n.Name()
@@ -76,7 +75,7 @@ module AFJVHtmlParser =
                 ("", "")
     
         let matchHtml =
-            match htmlStudioInfosElementsName with
+            match htmlStudioInfosElementsName () with
             | "a"::"strong"::"p"::"p"::[] ->
                 (htmlStudioInfos.[0].AttributeValue "href", htmlStudioInfos.[1].InnerText(), htmlStudioInfos.[2].InnerText().Trim(), contact htmlStudioInfos.[3])
             | "a"::"strong"::"p"::[] ->
@@ -90,7 +89,7 @@ module AFJVHtmlParser =
     
         let googleMapUrl, studioName, phone, studioContact = matchHtml
     
-        let address =
+        let address () =
             let addressList =
                 htmlStudio.Descendants (fun n -> 
                     n.HasAttribute("property", "og:street-address") ||
@@ -116,7 +115,7 @@ module AFJVHtmlParser =
             {
                 Name = studioName
                 AFJVUrl = url
-                Address = address
+                Address = address ()
                 GoogleMapUrl = googleMapUrl
                 Department = department
                 Phone = phone
@@ -124,13 +123,13 @@ module AFJVHtmlParser =
                 Website = snd studioContact
             }
     
-        debugProgress index annuaireSize studioName
+        debugProgress index directorySize studioName
     
         studio
     
-    let extractAllStudioFromAnnuaire annuaire =
-        annuaire
-        |> List.mapi (exctractStudioInfoFromUrl annuaire.Length)
+    let extractAllStudioFromDirectory directory =
+        directory
+        |> List.mapi (exctractStudioInfoFromUrl directory.Length)
 
     let saveStudiosToJson filePath studioList =
         let json =
